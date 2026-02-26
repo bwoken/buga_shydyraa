@@ -7,7 +7,7 @@ from flet import TapEvent
 
 import logic
 from logic import (board_nodes,NODE_COORDS,
-                   current_board_state,OFFSET_X,OFFSET_Y,UNIT,make_move,is_valid_move,unused_boys)
+                   current_board_state,OFFSET_X,OFFSET_Y,UNIT,make_move,is_valid_move)
 
 def main(page: ft.Page):
     page.title = 'Bull Chess'
@@ -30,6 +30,16 @@ def main(page: ft.Page):
                 break
 
         # STATE  MACHINE
+
+        # placing boys until zero are left in "pocket"
+        if logic.place_boy(clicked_node_id):
+            current_turn_text.value = 'TURN: BULLS' if logic.current_turn == 1 else 'TURN: BOYS'
+            current_turn_text.color = ft.Colors.GREY_400 if logic.current_turn == 1 else ft.Colors.CYAN
+            unused_boys_text.value = f'BOYS TO PLACE: {logic.unused_boys}'
+            new_board_canvas = draw_board()
+            board_gest_detector.content = new_board_canvas
+            page.update()
+            return
 
         #1. nothing is selected, waiting selection state
         if selected_node is None:
@@ -106,7 +116,7 @@ def main(page: ft.Page):
     )
 
     current_turn_text = ft.Text(f'TURN: BULLS',weight=ft.FontWeight.BOLD,size=20,color=ft.Colors.GREY)
-    unused_boys_text = ft.Text(f'BOYS TO PLACE: {unused_boys}',weight=ft.FontWeight.BOLD,size=20,color=ft.Colors.RED)
+    unused_boys_text = ft.Text(f'BOYS TO PLACE: {logic.unused_boys}',weight=ft.FontWeight.BOLD,size=20,color=ft.Colors.RED)
     game_info_row = ft.Row(controls=[current_turn_text,unused_boys_text],alignment=ft.MainAxisAlignment.SPACE_AROUND)
 
     board_container = ft.Container(

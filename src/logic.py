@@ -191,3 +191,12 @@ def make_move(start_node: int, end_node: int):
                     initial_boys -= 1
         # handing move to other player
         current_turn = -current_turn
+
+def place_boy(node_id):
+    global current_turn, unused_boys
+    if current_turn == BOY and unused_boys != 0 and current_board_state.get(node_id) == EMPTY:
+        current_board_state[node_id] = BOY
+        unused_boys -= 1
+        current_turn = -current_turn
+        return  True
+    return False
