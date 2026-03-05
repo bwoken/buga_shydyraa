@@ -15,6 +15,8 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.MainAxisAlignment.CENTER
     page.bgcolor = ft.Colors.BLUE_GREY_50
 
+    win_dialog = ft.AlertDialog(alignment = ft.Alignment.CENTER)
+
     selected_node = None
     #detecting clicks on board
     def on_board_click(e: ft.TapEvent):
@@ -64,6 +66,11 @@ def main(page: ft.Page):
                     selected_node = None
         new_board_canvas = draw_board()
         board_gest_detector.content = new_board_canvas
+        winner = logic.check_winner()
+        if winner:
+            win_dialog.title = f'{winner} WIN'
+            win_dialog.content = ft.Text('Not enough pawns left to suffocate bulls') if winner == 'BULLS' else ft.Text('No possible moves left for bulls')
+            page.show_dialog(win_dialog)
         page.update()
 
 
@@ -132,7 +139,6 @@ def main(page: ft.Page):
     help_button = ft.IconButton(icon=ft.Icons.HELP_OUTLINE)
     helpful_bar = ft.Container(bgcolor=ft.Colors.GREY,width=page.width,height=100,content=help_button)
     page.add(helpful_bar)
-
 
 if __name__ == "__main__":
     ft.run(main)
