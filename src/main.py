@@ -36,6 +36,7 @@ def main(page: ft.Page):
             current_turn_text.value = 'TURN: BULLS' if logic.current_turn == 1 else 'TURN: BOYS'
             current_turn_text.color = ft.Colors.GREY_400 if logic.current_turn == 1 else ft.Colors.CYAN
             unused_boys_text.value = f'BOYS TO PLACE: {logic.unused_boys}'
+            selected_node = None
             new_board_canvas = draw_board()
             board_gest_detector.content = new_board_canvas
             page.update()
