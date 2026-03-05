@@ -200,3 +200,26 @@ def place_boy(node_id):
         current_turn = -current_turn
         return  True
     return False
+
+def remaining_boys():
+    on_board = sum(1 for piece in current_board_state.values() if piece == BOY)
+    return on_board + unused_boys
+
+def can_bull_move():
+    for node_id, piece in current_board_state.items():
+        if piece == BULL:
+            for neighbor in board_nodes.get(node_id,[]):
+                if is_valid_move(node_id,neighbor):
+                    return True
+            if node_id in possible_moves:
+                for _, landing_node in possible_moves[node_id]:
+                    if is_valid_move(node_id,landing_node):
+                        return True
+    return False
+
+def check_winner():
+    if remaining_boys() < 4:
+        return 'BULLS'
+    if current_turn == BULL and not can_bull_move():
+        return 'BOYS'
+    return None
