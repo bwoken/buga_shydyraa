@@ -13,9 +13,27 @@ def main(page: ft.Page):
     page.title = 'Bull Chess'
     page.vertical_alignment = ft.MainAxisAlignment.SPACE_BETWEEN
     page.horizontal_alignment = ft.MainAxisAlignment.CENTER
-    page.bgcolor = ft.Colors.BLUE_GREY_50
+    page.window.maximized = True
+    page.bgcolor = ft.Colors.GREY_800
 
-    win_dialog = ft.AlertDialog(alignment = ft.Alignment.CENTER)
+    def restart_game(e):
+        logic.reset()
+        nonlocal selected_node
+        selected_node = None
+
+        # Скрываем диалог
+        win_dialog.open = False
+
+        # Обновляем текст интерфейса
+        current_turn_text.value = 'TURN: BULLS'
+        current_turn_text.color = ft.Colors.GREY_400
+        unused_boys_text.value = f'BOYS TO PLACE: {logic.unused_boys}'
+
+        # Перерисовываем доску
+        board_gest_detector.content = draw_board()
+        page.update()
+
+    win_dialog = ft.AlertDialog(alignment = ft.Alignment.CENTER,actions=[ft.TextButton("Play again",on_click=restart_game)])
 
     selected_node = None
     #detecting clicks on board
@@ -23,7 +41,7 @@ def main(page: ft.Page):
         nonlocal  selected_node
         click_x = e.local_position.x
         click_y = e.local_position.y
-        CLICK_RADIUS = 20
+        CLICK_RADIUS = 30
         clicked_node_id = None
         for node_id, (nx,ny) in NODE_COORDS.items():
             distance = math.sqrt((click_x-nx)**2 + (click_y-ny)**2)
@@ -113,12 +131,12 @@ def main(page: ft.Page):
 
     board_stack = ft.Stack(
         [
-            ft.Container(
-                width=BOARD_WIDTH,
-                height=BOARD_HEIGHT,
-                bgcolor=ft.Colors.BROWN_400,
-                border_radius=10
-            ),
+            # ft.Container(
+            #     width=BOARD_WIDTH,
+            #     height=BOARD_HEIGHT,
+            #     bgcolor=ft.Colors.BROWN_400,
+            #     border_radius=10
+            # ),
             board_gest_detector,
         ],width = BOARD_WIDTH,height = BOARD_HEIGHT,
     )
@@ -132,12 +150,12 @@ def main(page: ft.Page):
         width=BOARD_WIDTH + 40,
         height=BOARD_HEIGHT + 40,
         content=ft.Column([game_info_row,board_stack]),
-    alignment=ft.Alignment.CENTER)
+        alignment=ft.Alignment.CENTER)
     page.add(board_container)
 
     # lower bar
     help_button = ft.IconButton(icon=ft.Icons.HELP_OUTLINE)
-    helpful_bar = ft.Container(bgcolor=ft.Colors.GREY,width=page.width,height=100,content=help_button)
+    helpful_bar = ft.Container(bgcolor=ft.Colors.GREY,width=page.width,height=50,content=help_button)
     page.add(helpful_bar)
 
 if __name__ == "__main__":

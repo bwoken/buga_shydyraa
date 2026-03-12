@@ -94,7 +94,7 @@ current_board_state = initialize_board()
 # coordinates for board canvas
 UNIT = 70.0 # minimal distance between nodes
 OFFSET_X = 40.0   # Маленький отступ слева/справа
-OFFSET_Y = 250.0  # Большой отступ сверху, чтобы влезла "голова"
+OFFSET_Y = 165.0  # Большой отступ сверху, чтобы влезла "голова"
 
 NODE_COORDS = {
     # --- Голова и Шея ---
@@ -194,7 +194,7 @@ def make_move(start_node: int, end_node: int):
 
 def place_boy(node_id):
     global current_turn, unused_boys
-    if current_turn == BOY and unused_boys != 0 and current_board_state.get(node_id) == EMPTY:
+    if current_turn == BOY and unused_boys > 0 and current_board_state.get(node_id) == EMPTY:
         current_board_state[node_id] = BOY
         unused_boys -= 1
         current_turn = -current_turn
@@ -223,3 +223,15 @@ def check_winner():
     if current_turn == BULL and not can_bull_move():
         return 'BOYS'
     return None
+
+def reset():
+    global unused_boys, current_turn, initial_boys
+    # Убираем current_board_state из global, так как мы не будем ее переназначать (через '=')
+
+    unused_boys = 16
+    current_turn = BULL
+    initial_boys = 8
+
+    # Очищаем старый словарь и обновляем его новыми данными на месте
+    current_board_state.clear()
+    current_board_state.update(initialize_board())
