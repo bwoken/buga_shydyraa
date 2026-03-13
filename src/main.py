@@ -1,162 +1,181 @@
 import flet as ft
 import flet.canvas as cv
 import math
+import logic  # Твой новый ООП logic.py
 
-# USEFUL!!! maybe be shown as unused for some reason
-from flet import TapEvent
-
-import logic
-from logic import (board_nodes,NODE_COORDS,
-                   current_board_state,OFFSET_X,OFFSET_Y,UNIT,make_move,is_valid_move)
 
 def main(page: ft.Page):
-    page.title = 'Bull Chess'
-    page.vertical_alignment = ft.MainAxisAlignment.SPACE_BETWEEN
-    page.horizontal_alignment = ft.MainAxisAlignment.CENTER
-    page.window.maximized = True
-    page.bgcolor = ft.Colors.GREY_800
+    page.title = "Buga Shydyraa"
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.scroll = ft.ScrollMode.ADAPTIVE  # Для мобилок и маленьких экранов
 
-    def restart_game(e):
-        logic.reset()
+    # --- 1. СОЗДАЕМ ОБЪЕКТ ИГРЫ ---
+    game = logic.BugaGame()
+    selected_node = None
+
+    # --- 2. ЭЛЕМЕНТЫ UI ---
+    turn_text = ft.Text(value="TURN: BULLS", size=24, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD)
+    boys_text = ft.Text(value=f"BOYS TO PLACE: {game.unused_boys}", size=24, color=ft.Colors.RED_400,
+                        weight=ft.FontWeight.BOLD)
+
+    game_info_row = ft.Row(
+        [turn_text, boys_text],
+        alignment=ft.MainAxisAlignment.SPACE_AROUND
+    )
+
+    def update_ui_text():
+        """Обновляет текст хода и количества мальчиков."""
+        turn_text.value = "TURN: BULLS" if game.current_turn == logic.BULL else "TURN: BOYS"
+        boys_text.value = f"BOYS TO PLACE: {game.unused_boys}"
+
+        # Если мальчиков в кармане нет, можно убрать надпись или сделать ее зеленой
+        if game.unused_boys == 0:
+            boys_text.color = ft.Colors.GREEN
+            boys_text.value = "ALL BOYS PLACED"
+        else:
+            boys_text.color = ft.Colors.RED_400
+
+    # --- 3. ОТРИСОВКА ДОСКИ ---
+    def draw_board():
+        """Рисует доску, читая состояние из объекта game.board."""
+        shapes = []
+        drawn_connections = set()
+
+
+        # ТУТ ДОЛЖЕН БЫТЬ ТВОЙ КОД ОТРИСОВКИ ЛИНИЙ
+        for start_node, neighbors in logic.board_nodes.items():
+            for end_node in neighbors:
+                # Сортируем id, чтобы (1, 2) и (2, 1) считались одной связью
+                connection = tuple(sorted((start_node, end_node)))
+                if connection not in drawn_connections:
+                    x1, y1 = logic.NODE_COORDS[start_node]
+                    x2, y2 = logic.NODE_COORDS[end_node]
+                    shapes.append(
+                        cv.Line(
+                            x1, y1, x2, y2,
+                            ft.Paint(stroke_width=2, color=ft.Colors.BLACK)
+                        )
+                    )
+                    drawn_connections.add(connection)
+
+        # Отрисовка узлов и фигур
+        for node_id, coords in logic.NODE_COORDS.items():
+            x, y = coords
+            piece = game.board.get(node_id)
+
+            # Подсветка выбранной фигуры
+            if selected_node == node_id:
+                shapes.append(cv.Circle(x, y, 25, ft.Paint(color=ft.Colors.YELLOW, style=ft.PaintingStyle.FILL)))
+
+            # Отрисовка самих фигур
+            if piece == logic.BULL:
+                shapes.append(cv.Circle(x, y, 20, ft.Paint(color=ft.Colors.GREY_300, style=ft.PaintingStyle.FILL)))
+            elif piece == logic.BOY:
+                shapes.append(cv.Circle(x, y, 15, ft.Paint(color=ft.Colors.BLUE, style=ft.PaintingStyle.FILL)))
+            else:
+                # Пустой узел
+                shapes.append(cv.Circle(x, y, 5, ft.Paint(color=ft.Colors.BLACK, style=ft.PaintingStyle.FILL)))
+
+        return cv.Canvas(shapes=shapes, expand=True)
+
+    # --- 4. ОБРАБОТКА КЛИКА ---
+    def on_board_click(e: ft.TapEvent):
         nonlocal selected_node
-        selected_node = None
 
-        # Скрываем диалог
-        win_dialog.open = False
+        clicked_node = None
+        # Ищем, по какому узлу кликнули
+        for node_id, coords in logic.NODE_COORDS.items():
+            dist = math.hypot(e.local_position.x - coords[0], e.local_position.y - coords[1])
+            if dist <= 30:  # Увеличили радиус клика для удобства
+                clicked_node = node_id
+                break
 
-        # Обновляем текст интерфейса
-        current_turn_text.value = 'TURN: BULLS'
-        current_turn_text.color = ft.Colors.GREY_400
-        unused_boys_text.value = f'BOYS TO PLACE: {logic.unused_boys}'
+        if not clicked_node:
+            return
 
-        # Перерисовываем доску
+        # Логика Мальчика
+        if game.current_turn == logic.BOY:
+            if game.unused_boys > 0:
+                # Если есть запас - только выставляем
+                if game.place_boy(clicked_node):
+                    selected_node = None
+            else:
+                # Если запаса нет - выбираем и ходим
+                if selected_node is None:
+                    if game.board.get(clicked_node) == logic.BOY:
+                        selected_node = clicked_node
+                else:
+                    if game.make_move(selected_node, clicked_node):
+                        selected_node = None
+                    else:
+                        # Перевыбор фигуры, если кликнули на своего
+                        if game.board.get(clicked_node) == logic.BOY:
+                            selected_node = clicked_node
+
+        # Логика Быка
+        elif game.current_turn == logic.BULL:
+            if selected_node is None:
+                if game.board.get(clicked_node) == logic.BULL:
+                    selected_node = clicked_node
+            else:
+                if game.make_move(selected_node, clicked_node):
+                    selected_node = None
+                else:
+                    # Перевыбор быка
+                    if game.board.get(clicked_node) == logic.BULL:
+                        selected_node = clicked_node
+
+        # Проверка победы
+        winner = game.check_winner()
+        if winner:
+            win_dialog.title.value = f"{winner} WON!"
+            page.show_dialog(win_dialog)
+            win_dialog.open = True
+
+        # Обновляем UI
+        update_ui_text()
         board_gest_detector.content = draw_board()
         page.update()
 
-    win_dialog = ft.AlertDialog(alignment = ft.Alignment.CENTER,actions=[ft.TextButton("Play again",on_click=restart_game)])
+    # --- 5. СБРОС ИГРЫ ---
+    def restart_game(e):
+        nonlocal game, selected_node
+        # Просто создаем новую чистую игру! Никаких проблем со словарями.
+        game = logic.BugaGame()
+        selected_node = None
 
-    selected_node = None
-    #detecting clicks on board
-    def on_board_click(e: ft.TapEvent):
-        nonlocal  selected_node
-        click_x = e.local_position.x
-        click_y = e.local_position.y
-        CLICK_RADIUS = 30
-        clicked_node_id = None
-        for node_id, (nx,ny) in NODE_COORDS.items():
-            distance = math.sqrt((click_x-nx)**2 + (click_y-ny)**2)
-            if distance < CLICK_RADIUS:
-                clicked_node_id = node_id
-                break
-
-        # STATE  MACHINE
-
-        # placing boys until zero are left in "pocket"
-        if logic.place_boy(clicked_node_id):
-            current_turn_text.value = 'TURN: BULLS' if logic.current_turn == 1 else 'TURN: BOYS'
-            current_turn_text.color = ft.Colors.GREY_400 if logic.current_turn == 1 else ft.Colors.CYAN
-            unused_boys_text.value = f'BOYS TO PLACE: {logic.unused_boys}'
-            selected_node = None
-            new_board_canvas = draw_board()
-            board_gest_detector.content = new_board_canvas
-            page.update()
-            return
-
-        #1. nothing is selected, waiting selection state
-        if selected_node is None:
-            if current_board_state.get(clicked_node_id) == logic.current_turn:
-                selected_node = clicked_node_id #selecting the node
-
-        #2. deselecting if clicked on the selected
-        else:
-            if clicked_node_id == selected_node:
-                selected_node = None
-
-            # selecting other piece if clicked on current turn's piece
-            elif current_board_state.get(clicked_node_id) == logic.current_turn:
-                selected_node = clicked_node_id
-
-            else: #moving
-                if is_valid_move(selected_node,clicked_node_id):
-                    make_move(selected_node,clicked_node_id)
-                    current_turn_text.value = 'TURN: BULLS' if logic.current_turn == 1 else 'TURN: BOYS'
-                    current_turn_text.color = ft.Colors.GREY_400 if logic.current_turn == 1 else ft.Colors.CYAN
-                    selected_node = None
-        new_board_canvas = draw_board()
-        board_gest_detector.content = new_board_canvas
-        winner = logic.check_winner()
-        if winner:
-            win_dialog.title = f'{winner} WIN'
-            win_dialog.content = ft.Text('Not enough pawns left to suffocate bulls') if winner == 'BULLS' else ft.Text('No possible moves left for bulls')
-            page.show_dialog(win_dialog)
+        win_dialog.open = False
+        update_ui_text()
+        board_gest_detector.content = draw_board()
         page.update()
 
-
-    # making the visual board
-    def draw_board():
-        line_paint = ft.Paint(stroke_width=2,color=ft.Colors.BLACK,stroke_cap=ft.StrokeCap.ROUND)
-        bull_paint = ft.Paint(style=ft.PaintingStyle.FILL,color=ft.Colors.GREY_400)
-        boy_paint = ft.Paint(style=ft.PaintingStyle.FILL, color=ft.Colors.BLUE_800)
-        selected_paint = ft.Paint(style=ft.PaintingStyle.STROKE,color=ft.Colors.GREEN,stroke_width=4)
-
-        # drawing lines between nodes
-        shapes = []
-        for node_id,neighbours in board_nodes.items():
-            x1,y1 = NODE_COORDS[node_id]
-            for neighbour_id in neighbours:
-                if neighbour_id > node_id:
-                    x2,y2 = NODE_COORDS[neighbour_id]
-                    shapes.append(cv.Line(x1=x1,y1=y1,x2=x2,y2=y2,paint=line_paint))
-
-
-        # drawing pieces on the board
-        for node_id,piece_type in current_board_state.items():
-            x,y = NODE_COORDS[node_id]
-            if node_id == selected_node:
-                shapes.append(cv.Circle(x=x,y=y,radius=28,paint=selected_paint))
-            if piece_type == -1:
-                shapes.append(cv.Circle(x=x,y=y,radius=14, paint=boy_paint))
-            elif piece_type == 1:
-                shapes.append(cv.Circle(x=x,y=y,radius=24,paint=bull_paint))
-
-        return  cv.Canvas(shapes=shapes,expand=True)
-
-    BOARD_WIDTH = (4 * UNIT) + (2 * OFFSET_X)
-    BOARD_HEIGHT = OFFSET_Y + (6 * UNIT) + 40
-
-    # making it visible on the screen
-    board_canvas = draw_board()
-
-    board_gest_detector = ft.GestureDetector(on_tap_down=on_board_click,content=board_canvas)
-
-    board_stack = ft.Stack(
-        [
-            # ft.Container(
-            #     width=BOARD_WIDTH,
-            #     height=BOARD_HEIGHT,
-            #     bgcolor=ft.Colors.BROWN_400,
-            #     border_radius=10
-            # ),
-            board_gest_detector,
-        ],width = BOARD_WIDTH,height = BOARD_HEIGHT,
+    # Диалог победы
+    win_dialog = ft.AlertDialog(
+        title=ft.Text(""),
+        actions=[ft.TextButton("Play Again", on_click=restart_game)],
+        actions_alignment=ft.MainAxisAlignment.END,
     )
 
-    current_turn_text = ft.Text(f'TURN: BULLS',weight=ft.FontWeight.BOLD,size=20,color=ft.Colors.GREY)
-    unused_boys_text = ft.Text(f'BOYS TO PLACE: {logic.unused_boys}',weight=ft.FontWeight.BOLD,size=20,color=ft.Colors.RED)
-    game_info_row = ft.Row(controls=[current_turn_text,unused_boys_text],alignment=ft.MainAxisAlignment.SPACE_AROUND)
+    # --- 6. СБОРКА ИНТЕРФЕЙСА ---
+    board_gest_detector = ft.GestureDetector(
+        on_tap_down=on_board_click,
+        content=draw_board(),
+    )
 
     board_container = ft.Container(
         bgcolor=ft.Colors.BROWN,
-        width=BOARD_WIDTH + 40,
-        height=BOARD_HEIGHT + 40,
-        content=ft.Column([game_info_row,board_stack]),
-        alignment=ft.Alignment.CENTER)
+        width=500,  # Подстрой под свой BOARD_WIDTH
+        height=800,  # Подстрой под свой BOARD_HEIGHT
+        content=ft.Column(
+            [game_info_row, board_gest_detector],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER
+        ),
+        alignment=ft.Alignment.CENTER,
+        padding=20,
+    )
+
     page.add(board_container)
 
-    # lower bar
-    help_button = ft.IconButton(icon=ft.Icons.HELP_OUTLINE)
-    helpful_bar = ft.Container(bgcolor=ft.Colors.GREY,width=page.width,height=50,content=help_button)
-    page.add(helpful_bar)
 
 if __name__ == "__main__":
     ft.run(main)

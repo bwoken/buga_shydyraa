@@ -71,26 +71,6 @@ possible_moves = {1: [(3, 7)],
                   34: [(31, 27)],
                   35: [(32, 27), (34, 33)]}
 
-EMPTY = 0
-BULL = 1
-BOY = -1
-
-def initialize_board() -> dict:
-    board_state = {}
-    for i in range(1, 36):
-        board_state[i] = EMPTY
-
-    board_state[7] = BULL
-    board_state[27] = BULL
-    boy_nodes = [11, 12, 13, 16, 18, 21, 22, 23]
-    for i in boy_nodes:
-        board_state[i] = BOY
-
-    return board_state
-
-
-current_board_state = initialize_board()
-
 # coordinates for board canvas
 UNIT = 70.0 # minimal distance between nodes
 OFFSET_X = 40.0   # Маленький отступ слева/справа
@@ -150,88 +130,128 @@ NODE_COORDS = {
     35: (OFFSET_X + 4 * UNIT, OFFSET_Y + 6 * UNIT),
 }
 
-selected_piece = None
-current_turn = BULL
-unused_boys = 16
-initial_boys = 8
-boys = unused_boys + initial_boys
+# --- КОНСТАНТЫ ---
+EMPTY = 0
+BULL = 1
+BOY = -1
 
-def is_valid_move(start_node_id: int,end_node_id: int) -> bool:
-    global current_turn
-    # checking if end node or chosen node are empty
-    if current_board_state.get(end_node_id) != EMPTY or current_board_state.get(start_node_id) == EMPTY:
+class BugaGame:
+    def __init__(self):
+        # Состояние игры теперь хранится внутри объекта
+        self.unused_boys = 16
+        self.current_turn = BULL
+        self.board = self.initialize_board()
+
+    def initialize_board(self):
+        """Создает доску и расставляет начальные фигуры."""
+        # Создаем пустую доску (предполагаем 35 узлов, если у тебя 34 — исправь range)
+        state = {i: EMPTY for i in range(1, 36)}
+
+        # Расстановка быков (по твоим координатам)
+        state[7] = BULL
+        state[27] = BULL
+
+        # Расстановка 8 начальных мальчиков
+        for i in [11, 12, 13, 16, 18, 21, 22, 23]:
+            state[i] = BOY
+
+        return state
+
+    def is_valid_move(self, start, end):
+        """Проверяет, возможен ли ход по правилам."""
+        if self.board.get(end) != EMPTY:
+            return False
+
+        piece = self.board.get(start)
+
+        # ЛОГИКА МАЛЬЧИКА
+        if piece == BOY:
+            # Мальчики не могут ходить, пока карман не пуст!
+            if self.unused_boys > 0:
+                return False
+            # Если карман пуст, могут ходить на соседние узлы
+            if end in board_nodes.get(start, []):
+                return True
+
+        # ЛОГИКА БЫКА
+        elif piece == BULL:
+            # 1. Обычный шаг на соседний узел
+            if end in board_nodes.get(start, []):
+                return True
+            # 2. Прыжок (съедание) через мальчика
+            if start in possible_moves:
+                for mid_node, landing_node in possible_moves[start]:
+                    if landing_node == end and self.board.get(mid_node) == BOY:
+                        return True
+
         return False
 
-    # right side to make a move
-    if current_board_state.get(start_node_id) != current_turn:
-        return False
-    # checking if moving to node is possible (if there is a connection between start node and end node)
-    if end_node_id in board_nodes.get(start_node_id,[]):
+    def make_move(self, start, end):
+        """Выполняет ход и обрабатывает съедание."""
+        if not self.is_valid_move(start, end):
+            return False
+
+        piece = self.board[start]
+
+        # Если ходит бык и это не обычный шаг (значит это прыжок)
+        if piece == BULL and end not in board_nodes.get(start, []):
+            if start in possible_moves:
+                for mid_node, landing_node in possible_moves[start]:
+                    if landing_node == end:
+                        # Удаляем съеденного мальчика навсегда
+                        self.board[mid_node] = EMPTY
+
+                        # Выполняем перемещение
+        self.board[end] = piece
+        self.board[start] = EMPTY
+
+        # Передаем ход
+        self.current_turn = BOY if self.current_turn == BULL else BULL
         return True
 
-    # capturing
-    if start_node_id in possible_moves:
-        for boy_node, landing_node in possible_moves[start_node_id]:
-            if landing_node == end_node_id:
-                if current_board_state[boy_node] == BOY and current_board_state[start_node_id] == BULL:
-                    return True
+    def place_boy(self, node_id):
+        """Выставляет мальчика из 'кармана' на пустую клетку."""
+        if self.current_turn == BOY and self.unused_boys > 0:
+            if self.board.get(node_id) == EMPTY:
+                self.board[node_id] = BOY
+                self.unused_boys -= 1
+                self.current_turn = BULL
+                return True
+        return False
 
-    return False
+    def can_bull_move(self):
+        """Проверяет, есть ли у любого из быков хоть один законный ход."""
+        # Ищем все позиции, где стоят быки
+        bull_positions = [node for node, piece in self.board.items() if piece == BULL]
 
-def make_move(start_node: int, end_node: int):
-    global current_turn,initial_boys
-    if is_valid_move(start_node,end_node):
-        # moving the piece
-        current_board_state[start_node],current_board_state[end_node] = current_board_state[end_node],current_board_state[start_node]
-        if end_node not in board_nodes[start_node]:
-            # removing the boy if move is a capture
-            for boy_node,end_node_iter in possible_moves[start_node]:
-                if end_node_iter == end_node:
-                    current_board_state[boy_node] = EMPTY
-                    initial_boys -= 1
-        # handing move to other player
-        current_turn = -current_turn
+        for pos in bull_positions:
+            # 1. Проверяем обычные шаги (соседние пустые узлы)
+            neighbors = board_nodes.get(pos, [])
+            for neighbor in neighbors:
+                if self.board.get(neighbor) == EMPTY:
+                    return True  # Нашли хоть один ход — быки не заблокированы
 
-def place_boy(node_id):
-    global current_turn, unused_boys
-    if current_turn == BOY and unused_boys > 0 and current_board_state.get(node_id) == EMPTY:
-        current_board_state[node_id] = BOY
-        unused_boys -= 1
-        current_turn = -current_turn
-        return  True
-    return False
+            # 2. Проверяем прыжки (бык может прыгнуть, если за мальчиком пусто)
+            jumps = possible_moves.get(pos, [])
+            for mid_node, landing_node in jumps:
+                if (self.board.get(landing_node) == EMPTY and
+                        self.board.get(mid_node) == BOY):
+                    return True  # Бык может съесть мальчика — он не заблокирован
 
-def remaining_boys():
-    on_board = sum(1 for piece in current_board_state.values() if piece == BOY)
-    return on_board + unused_boys
+        return False  # Ни один бык не может ни шагнуть, ни прыгнуть
 
-def can_bull_move():
-    for node_id, piece in current_board_state.items():
-        if piece == BULL:
-            for neighbor in board_nodes.get(node_id,[]):
-                if is_valid_move(node_id,neighbor):
-                    return True
-            if node_id in possible_moves:
-                for _, landing_node in possible_moves[node_id]:
-                    if is_valid_move(node_id,landing_node):
-                        return True
-    return False
+    def check_winner(self):
+        """Проверка условий победы."""
+        on_board_boys = sum(1 for p in self.board.values() if p == BOY)
+        total_boys = on_board_boys + self.unused_boys
 
-def check_winner():
-    if remaining_boys() < 4:
-        return 'BULLS'
-    if current_turn == BULL and not can_bull_move():
-        return 'BOYS'
-    return None
+        # Условие победы БЫКОВ
+        if total_boys < 4:
+            return "BULLS"
 
-def reset():
-    global unused_boys, current_turn, initial_boys
-    # Убираем current_board_state из global, так как мы не будем ее переназначать (через '=')
+        # Условие победы МАЛЬЧИКОВ (быки заблокированы)
+        # ВАЖНО: Мальчики побеждают, если у быков НЕТ ходов
+        if not self.can_bull_move():
+            return "BOYS"
 
-    unused_boys = 16
-    current_turn = BULL
-    initial_boys = 8
-
-    # Очищаем старый словарь и обновляем его новыми данными на месте
-    current_board_state.clear()
-    current_board_state.update(initialize_board())
+        return None
