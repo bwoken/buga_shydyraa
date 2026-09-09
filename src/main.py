@@ -76,6 +76,9 @@ def main(page: ft.Page):
                 # Пустой узел
                 shapes.append(cv.Circle(x, y, 5, ft.Paint(color=ft.Colors.BLACK, style=ft.PaintingStyle.FILL)))
 
+        for node_id, coords in logic.NODE_COORDS.items():
+            x, y = coords
+            shapes.append(cv.Text(x, y, spans=[ft.TextSpan(text=str(node_id),style=ft.TextStyle(color=ft.Colors.AMBER,weight=ft.FontWeight.BOLD))]))
         return cv.Canvas(shapes=shapes, expand=True)
 
     # --- 4. ОБРАБОТКА КЛИКА ---
