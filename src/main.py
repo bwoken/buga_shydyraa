@@ -107,6 +107,7 @@ def main(page: ft.Page):
                 if selected_node is None:
                     if game.board.get(clicked_node) == logic.BOY:
                         selected_node = clicked_node
+                        legal_moves_for_selected = game.get_legal_moves_for_node(selected_node)
                 else:
                     if game.make_move(selected_node, clicked_node):
                         selected_node = None
