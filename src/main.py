@@ -23,6 +23,7 @@ def main(page: ft.Page):
     # --- 1. СОЗДАЕМ ОБЪЕКТ ИГРЫ ---
     game = logic.BugaGame()
     selected_node = None
+    legal_moves_for_selected = []
 
     # --- 2. ЭЛЕМЕНТЫ UI ---
     turn_text = ft.Text(value="TURN: BULLS", size=24, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD)
@@ -53,7 +54,7 @@ def main(page: ft.Page):
         drawn_connections = set()
 
 
-        # ТУТ ДОЛЖЕН БЫТЬ ТВОЙ КОД ОТРИСОВКИ ЛИНИЙ
+        # КОД ОТРИСОВКИ ЛИНИЙ
         for start_node, neighbors in logic.board_nodes.items():
             for end_node in neighbors:
                 # Сортируем id, чтобы (1, 2) и (2, 1) считались одной связью
@@ -68,6 +69,31 @@ def main(page: ft.Page):
                         )
                     )
                     drawn_connections.add(connection)
+
+        # --- ВИЗУАЛИЗАЦИЯ ВОЗМОЖНЫХ ХОДОВ (под фигурами) ---
+        for node_id in legal_moves_for_selected:
+            x, y = logic.NODE_COORDS[node_id]
+            # Рисуем зеленый кружок с пульсирующим эффектом
+            shapes.append(
+                cv.Circle(
+                    x, y, 20,
+                    ft.Paint(
+                        color=ft.Colors.GREEN,
+                        style=ft.PaintingStyle.STROKE,
+                        stroke_width=3,
+                    )
+                )
+            )
+            # Внутренний кружок (полупрозрачный)
+            shapes.append(
+                cv.Circle(
+                    x, y, 15,
+                    ft.Paint(
+                        color=ft.Colors.with_opacity(0.3,ft.Colors.GREEN),
+                        style=ft.PaintingStyle.FILL,
+                    )
+                )
+            )
 
         # Отрисовка узлов и фигур
         for node_id, coords in logic.NODE_COORDS.items():
@@ -87,6 +113,7 @@ def main(page: ft.Page):
                 # Пустой узел
                 shapes.append(cv.Circle(x, y, 5, ft.Paint(color=ft.Colors.BLACK, style=ft.PaintingStyle.FILL)))
 
+        # Отрисовка номера узла
         for node_id, coords in logic.NODE_COORDS.items():
             x, y = coords
             shapes.append(cv.Text(x, y, spans=[ft.TextSpan(text=str(node_id),style=ft.TextStyle(color=ft.Colors.AMBER,weight=ft.FontWeight.BOLD))]))
@@ -94,9 +121,10 @@ def main(page: ft.Page):
 
     # --- 4. ОБРАБОТКА КЛИКА ---
     def on_board_click(e: ft.TapEvent):
-        nonlocal selected_node
+        nonlocal selected_node,legal_moves_for_selected
 
         clicked_node = None
+        legal_moves_for_selected = []
         # Ищем, по какому узлу кликнули
         for node_id, coords in logic.NODE_COORDS.items():
             dist = math.hypot(e.local_position.x - coords[0], e.local_position.y - coords[1])
@@ -137,13 +165,16 @@ def main(page: ft.Page):
             if selected_node is None:
                 if game.board.get(clicked_node) == logic.BULL:
                     selected_node = clicked_node
+                    legal_moves_for_selected = game.get_legal_moves_for_node(selected_node)
             else:
                 if game.make_move(selected_node, clicked_node):
                     selected_node = None
+                    legal_moves_for_selected = []
                 else:
-                    # Перевыбор быка
+                    # Перевыбор быка если нажали на своего
                     if game.board.get(clicked_node) == logic.BULL:
                         selected_node = clicked_node
+                        legal_moves_for_selected = game.get_legal_moves_for_node(selected_node)
 
                     # Снятие выделения если нажали на чужую фигуру
                     else:
@@ -155,8 +186,6 @@ def main(page: ft.Page):
             win_dialog.title.value = f"{winner} WON!"
             page.show_dialog(win_dialog)
             win_dialog.open = True
-
-        # Обновляем UI
         update_ui_text()
         board_gest_detector.content = draw_board()
         page.update()
@@ -197,8 +226,8 @@ def main(page: ft.Page):
         alignment=ft.Alignment.CENTER,
         padding=20,
     )
-
-    page.add(board_container)
+    lower_bar = ft.BottomAppBar(content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_AROUND))
+    page.add(board_container,lower_bar)
 
 
 if __name__ == "__main__":

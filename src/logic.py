@@ -138,16 +138,16 @@ BOY = -1
 class BugaGame:
     def __init__(self):
         # Состояние игры теперь хранится внутри объекта
-        self.unused_boys = 16
+        self.unused_boys = 0
         self.current_turn = BULL
         self.board = self.initialize_board()
 
     def initialize_board(self):
         """Создает доску и расставляет начальные фигуры."""
-        # Создаем пустую доску (предполагаем 35 узлов, если у тебя 34 — исправь range)
+        # Создаем пустую доску
         state = {i: EMPTY for i in range(1, 36)}
 
-        # Расстановка быков (по твоим координатам)
+        # Расстановка быков
         state[7] = BULL
         state[27] = BULL
 
