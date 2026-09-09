@@ -255,3 +255,65 @@ class BugaGame:
             return "BOYS"
 
         return None
+
+    def get_all_legal_moves(self):
+        moves = []
+        # Проходим по всем узлам доски
+        for start_node, piece in self.board.items():
+            # Бот должен ходить ТОЛЬКО своими фигурами
+            if piece == self.current_turn:
+                # Если это мальчик и в запасе еще есть кто-то — бот ДОЛЖЕН выставлять
+                if piece == BOY and self.unused_boys > 0:
+                    # В этом режиме он не двигает фигуры, а только ставит
+                    # (Логика: если есть запас, ход состоит только из выставления)
+                    continue
+
+                    # Проверяем все возможные точки назначения
+                for end_node in self.board.keys():
+                    if self.is_valid_move(start_node, end_node):
+                        moves.append(("MOVE", start_node, end_node))
+
+        # Если это ход мальчиков и есть запас, добавляем только ходы выставления
+        if self.current_turn == BOY and self.unused_boys > 0:
+            for node_id, piece in self.board.items():
+                if piece == EMPTY:
+                    moves.append(("PLACE", None, node_id))
+
+        return moves
+
+    # ходы для отдельной фигуры
+    def get_legal_moves_for_node(self, node_id):
+        """Возвращает список возможных ходов для конкретной фигуры."""
+        moves = []
+        piece = self.board.get(node_id)
+
+        if piece is None or piece == EMPTY:
+            return moves
+
+        # Для мальчиков
+        if piece == BOY:
+            if self.unused_boys > 0:
+                # Если есть запас - можно только выставлять
+                # Но это обрабатывается отдельно в UI
+                return moves
+            else:
+                # Проверяем соседние узлы
+                for neighbor in board_nodes.get(node_id, []):
+                    if self.board.get(neighbor) == EMPTY:
+                        moves.append(neighbor)
+
+        # Для быков
+        elif piece == BULL:
+            # 1. Обычные шаги
+            for neighbor in board_nodes.get(node_id, []):
+                if self.board.get(neighbor) == EMPTY:
+                    moves.append(neighbor)
+
+            # 2. Прыжки (съедания)
+            if node_id in possible_moves:
+                for mid_node, landing_node in possible_moves[node_id]:
+                    if (self.board.get(landing_node) == EMPTY and
+                            self.board.get(mid_node) == BOY):
+                        moves.append(landing_node)
+
+        return moves
