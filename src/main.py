@@ -129,6 +129,10 @@ def main(page: ft.Page):
                     if game.board.get(clicked_node) == logic.BULL:
                         selected_node = clicked_node
 
+                    # Снятие выделения если нажали на чужую фигуру
+                    else:
+                        selected_node = None
+                        legal_moves_for_selected = []
         # Проверка победы
         winner = game.check_winner()
         if winner:
