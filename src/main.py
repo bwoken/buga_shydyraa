@@ -126,6 +126,11 @@ def main(page: ft.Page):
                         # Перевыбор фигуры, если кликнули на своего
                         if game.board.get(clicked_node) == logic.BOY:
                             selected_node = clicked_node
+                            legal_moves_for_selected = game.get_legal_moves_for_node(selected_node)
+                        # Снятие выделения с мальчика если кликнули на чужую фигуру
+                        else:
+                            selected_node = None
+                            legal_moves_for_selected = []
 
         # Логика Быка
         elif game.current_turn == logic.BULL:
