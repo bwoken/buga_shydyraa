@@ -9,6 +9,17 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.ADAPTIVE  # Для мобилок и маленьких экранов
 
+    def choose_mode(e):
+        nonlocal chosen_mode
+        chosen_mode = e.control.data
+        choose_mode_dialog.open = False
+
+    choose_mode_dialog = ft.AlertDialog(title=ft.Text("Choose mode"),
+                                        actions=[ft.TextButton("Local",data="local",on_click=choose_mode),
+                                                ft.TextButton("Against bot",data="vs bot",on_click = choose_mode,disabled=True)],)
+    page.show_dialog(choose_mode_dialog)
+    chosen_mode = None
+
     # --- 1. СОЗДАЕМ ОБЪЕКТ ИГРЫ ---
     game = logic.BugaGame()
     selected_node = None
