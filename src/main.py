@@ -142,6 +142,7 @@ def main(page: ft.Page):
                 # Если есть запас - только выставляем
                 if game.place_boy(clicked_node):
                     selected_node = None
+                    legal_moves_for_selected = []
             else:
                 # Если запаса нет - выбираем и ходим
                 if selected_node is None:
