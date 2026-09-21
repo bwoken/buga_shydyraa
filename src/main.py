@@ -38,6 +38,7 @@ def main(page: ft.Page):
     def update_ui_text():
         """Обновляет текст хода и количества мальчиков."""
         turn_text.value = "TURN: BULLS" if game.current_turn == logic.BULL else "TURN: BOYS"
+        turn_text.color = ft.Colors.WHITE if game.current_turn == logic.BULL else ft.Colors.BLUE
         boys_text.value = f"BOYS TO PLACE: {game.unused_boys}"
 
         # Если мальчиков в кармане нет, можно убрать надпись или сделать ее зеленой
