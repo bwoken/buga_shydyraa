@@ -152,6 +152,7 @@ def main(page: ft.Page):
                 else:
                     if game.make_move(selected_node, clicked_node):
                         selected_node = None
+                        legal_moves_for_selected = []
                     else:
                         # Перевыбор фигуры, если кликнули на своего
                         if game.board.get(clicked_node) == logic.BOY:
