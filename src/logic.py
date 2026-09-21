@@ -246,7 +246,7 @@ class BugaGame:
         total_boys = on_board_boys + self.unused_boys
 
         # Условие победы БЫКОВ
-        if total_boys < 4:
+        if total_boys < 9:
             return "BULLS"
 
         # Условие победы МАЛЬЧИКОВ (быки заблокированы)
