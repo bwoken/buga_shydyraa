@@ -138,7 +138,7 @@ BOY = -1
 class BugaGame:
     def __init__(self):
         # Состояние игры теперь хранится внутри объекта
-        self.unused_boys = 0
+        self.unused_boys = 16
         self.current_turn = BULL
         self.board = self.initialize_board()
 
