@@ -24,6 +24,7 @@ def main(page: ft.Page):
                         color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD)
     boys_text = ft.Text(value=f"BOYS TO PLACE: {game.unused_boys}", size=24,
                         color=ft.Colors.RED_400, weight=ft.FontWeight.BOLD)
+    reset_button = ft.Button("RESET",on_click=lambda e: restart_game())
 
     game_info_row = ft.Row(
         [turn_text, boys_text],
