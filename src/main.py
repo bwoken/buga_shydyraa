@@ -3,7 +3,7 @@ import flet.canvas as cv
 import math
 import asyncio
 import logic
-from bot import EasyBot
+from bot import EasyBot,SmartBot
 
 def main(page: ft.Page):
     page.title = "Buga Shydyraa"
@@ -27,7 +27,7 @@ def main(page: ft.Page):
     reset_button = ft.Button("RESET",on_click=lambda e: restart_game())
 
     game_info_row = ft.Row(
-        [turn_text, boys_text],
+        [turn_text, boys_text,reset_button],
         alignment=ft.MainAxisAlignment.SPACE_AROUND
     )
 
@@ -258,12 +258,18 @@ def main(page: ft.Page):
 
         if mode == "local":
             bot, bot_side = None, None
-        elif mode == "vs_bot_bulls":   # бот за быков
+        elif mode == "vs_easy_bot_bulls":   # легкий бот за быков
             bot_side = logic.BULL
             bot = EasyBot(game, bot_side)
-        elif mode == "vs_bot_boys":    # бот за мальчиков
+        elif mode == "vs_easy_bot_boys":    # легкий бот за мальчиков
             bot_side = logic.BOY
             bot = EasyBot(game, bot_side)
+        elif mode == "vs_smart_bot_bulls":   # умный бот за быков
+            bot_side = logic.BULL
+            bot = SmartBot(game, bot_side)
+        elif mode == "vs_smart_bot_boys":    # умный бот за мальчиков
+            bot_side = logic.BOY
+            bot = SmartBot(game, bot_side)
 
         choose_mode_dialog.open = False
         update_ui_text()
@@ -285,20 +291,35 @@ def main(page: ft.Page):
                     on_click=lambda e: start_game("local"),
                 ),
                 ft.Divider(),
-                ft.Text("Against bot:"),
+                ft.Row(controls=[ft.Text("Against bot")]),
+                ft.Text("Easy bot:"),
                 ft.Row(
                     spacing=8,
                     controls=[
                         ft.OutlinedButton(
                             "Play as Boys",
-                            on_click=lambda e: start_game("vs_bot_bulls"),
+                            on_click=lambda e: start_game("vs_easy_bot_bulls"),
                         ),
                         ft.OutlinedButton(
                             "Play as Bulls",
-                            on_click=lambda e: start_game("vs_bot_boys"),
+                            on_click=lambda e: start_game("vs_easy_bot_boys"),
                         ),
                     ],
                 ),
+                ft.Text("Smart bot:"),
+                ft.Row(
+                    spacing=8,
+                    controls=[
+                        ft.OutlinedButton(
+                            "Play as Boys",
+                            on_click=lambda e: start_game("vs_smart_bot_bulls"),
+                        ),
+                        ft.OutlinedButton(
+                            "Play as Bulls",
+                            on_click=lambda e: start_game("vs_smart_bot_boys"),
+                        ),
+                    ],
+                )
             ],
         ),
     )
