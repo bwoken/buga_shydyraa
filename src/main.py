@@ -137,7 +137,10 @@ def main(page: ft.Page):
 
             winner = game.check_winner()
             if winner:
-                win_dialog.title.value = f"{winner} WON!"
+                if winner == "DRAW":
+                    win_dialog.title.value = "DRAW"
+                else:
+                    win_dialog.title.value = f"{winner} WON!"
                 page.show_dialog(win_dialog)
 
             update_ui_text()
@@ -157,7 +160,10 @@ def main(page: ft.Page):
 
         winner = game.check_winner()
         if winner:
-            win_dialog.title.value = f"{winner} WON!"
+            if winner == "DRAW":
+                win_dialog.title.value = "DRAW"
+            else:
+                win_dialog.title.value = f"{winner} WON!"
             page.show_dialog(win_dialog)
             return
 

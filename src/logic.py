@@ -141,6 +141,14 @@ class BugaGame:
         self.unused_boys = 16
         self.current_turn = BULL
         self.board = self.initialize_board()
+        self.moves_without_capture = 0
+        self.position_history = []
+        self._record_position()
+
+    def _record_position(self):
+        board_tuple = tuple(sorted(self.board.items()))
+        position_key = (board_tuple,self.current_turn,self.unused_boys)
+        self.position_history.append(position_key)
 
     def initialize_board(self):
         """Создает доску и расставляет начальные фигуры."""
@@ -200,13 +208,16 @@ class BugaGame:
                     if landing_node == end:
                         # Удаляем съеденного мальчика навсегда
                         self.board[mid_node] = EMPTY
+                        self.moves_without_capture = 0
 
                         # Выполняем перемещение
         self.board[end] = piece
         self.board[start] = EMPTY
+        self.moves_without_capture += 1
 
         # Передаем ход
         self.current_turn = BOY if self.current_turn == BULL else BULL
+        self._record_position()
         return True
 
     def place_boy(self, node_id):
@@ -216,6 +227,7 @@ class BugaGame:
                 self.board[node_id] = BOY
                 self.unused_boys -= 1
                 self.current_turn = BULL
+                self._record_position()
                 return True
         return False
 
@@ -248,11 +260,17 @@ class BugaGame:
         # Условие победы БЫКОВ
         if total_boys < 9:
             return "BULLS"
-
         # Условие победы МАЛЬЧИКОВ (быки заблокированы)
-        # ВАЖНО: Мальчики побеждают, если у быков НЕТ ходов
         if not self.can_bull_move():
             return "BOYS"
+
+        if self.moves_without_capture >= 30: #ничья по 30 ходам без съедений
+            return "DRAW"
+
+        if self.position_history:
+            current_position = self.position_history[-1] #ничья по повторении позиции 3 раз
+            if self.position_history.count(current_position) >= 3:
+                return "DRAW"
 
         return None
 

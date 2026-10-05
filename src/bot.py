@@ -260,13 +260,17 @@ class SmartBot:
             self.game.board.copy(),
             self.game.current_turn,
             self.game.unused_boys,
+            self.game.moves_without_capture,
+            len(self.game.position_history)
         )
 
     def _restore(self, snap):
-        board, turn, unused = snap
+        board, turn, unused, mwc, hist_len = snap
         self.game.board = dict(board)  # ← копия, а не ссылка
         self.game.current_turn = turn
         self.game.unused_boys = unused
+        self.game.moves_without_capture = mwc
+        del self.game.position_history[hist_len:]
 
     def _order_moves(self, moves):
         """
