@@ -109,7 +109,6 @@ class SmartBot:
     def get_move(self):
         if self.game.current_turn != self.bot_side:
             return None
-
         moves = self.game.get_all_legal_moves()
         if not moves:
             return None
@@ -120,13 +119,11 @@ class SmartBot:
         self.timed_out = False
 
         best_move = moves[0]
-        # Итеративное углубление: считаем на 1, потом на 2, ... — прерываемся по времени
         for d in range(1, self.depth + 1):
-            try:
-                m = self._search_root(d)
-                if m is not None:
-                    best_move = m
-            except TimeoutError:
+            m = self._search_root(d)
+            if m is not None:
+                best_move = m
+            if self.timed_out:
                 break
             if time.time() > self.deadline:
                 break
@@ -146,7 +143,6 @@ class SmartBot:
     # ---------- ПОИСК ----------
 
     def _search_root(self, depth):
-        """Перебор ходов в корне — выбираем лучший по оценке."""
         moves = self._order_moves(self.game.get_all_legal_moves())
         is_max = (self.game.current_turn == self.bot_side)
 
@@ -159,6 +155,9 @@ class SmartBot:
             score = self._minimax(depth - 1, -float("inf"), float("inf"), not is_max)
             self._restore(snap)
 
+            if self.timed_out:
+                return None  # ← итерация не завершилась — отбрасываем
+
             if is_max and score > best_score:
                 best_score, best_move = score, move
             elif not is_max and score < best_score:
@@ -167,15 +166,15 @@ class SmartBot:
         return best_move
 
     def _minimax(self, depth, alpha, beta, is_max):
+        if self.timed_out:
+            return 0
         if time.time() > self.deadline:
-            raise TimeoutError()
+            self.timed_out = True
+            return 0
 
         winner = self.game.check_winner()
         if winner is not None:
-            # Терминальная позиция. Чем раньше победа — тем лучше.
-            if winner == self._my_win_str():
-                return 100_000 + depth
-            return -100_000 - depth
+            return 100_000 + depth if winner == self._my_win_str() else -100_000 - depth
 
         if depth == 0:
             return self._evaluate()
@@ -192,6 +191,8 @@ class SmartBot:
                 self._apply(move)
                 score = self._minimax(depth - 1, alpha, beta, False)
                 self._restore(snap)
+                if self.timed_out:
+                    return 0
                 best = max(best, score)
                 alpha = max(alpha, score)
                 if alpha >= beta:
@@ -203,6 +204,8 @@ class SmartBot:
                 self._apply(move)
                 score = self._minimax(depth - 1, alpha, beta, True)
                 self._restore(snap)
+                if self.timed_out:
+                    return 0
                 best = min(best, score)
                 beta = min(beta, score)
                 if alpha >= beta:
