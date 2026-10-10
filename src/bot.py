@@ -2,6 +2,10 @@ import random
 import time
 from logic import BULL, BOY, EMPTY, board_nodes, possible_moves
 
+INITIAL_BOYS = 24              # 8 на доске + 16 в руке
+BOY_VALUE = 50
+BULL_MOBILITY_VALUE = 3
+EAT_BONUS = 5
 
 class EasyBot:
     def __init__(self, game, bot_side):
@@ -233,14 +237,14 @@ class SmartBot:
                 for mid, landing in possible_moves.get(node, []):
                     if (self.game.board.get(landing) == EMPTY
                             and self.game.board.get(mid) == BOY):
-                        bull_mobility += 5
+                        bull_mobility += EAT_BONUS
 
         if self.bot_side == BULL:
             # Бык хочет: съесть побольше, не быть зажатым
-            return (24 - total_boys) * 50 + bull_mobility * 3
+            return (INITIAL_BOYS - total_boys) * BOY_VALUE + bull_mobility * BULL_MOBILITY_VALUE
         else:
             # Мальчик хочет: сохранить фигуры, зажать быков
-            return total_boys * 50 - bull_mobility * 3
+            return total_boys * BOY_VALUE - bull_mobility * BULL_MOBILITY_VALUE
 
     def _my_win_str(self):
         return "BULLS" if self.bot_side == BULL else "BOYS"
