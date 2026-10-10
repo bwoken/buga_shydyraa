@@ -47,6 +47,22 @@ def main(page: ft.Page):
         else:
             boys_text.color = ft.Colors.RED_400
 
+    def show_game_over(result: str):
+        """Показывает диалог окончания игры."""
+        if result == logic.BULLS_WIN:
+            win_dialog.title.value = "BULLS WON"
+            win_dialog.content = ft.Text("Not enough boys left")
+        elif result == logic.BOYS_WIN:
+            win_dialog.title.value = "BOYS WON"
+            win_dialog.content = ft.Text("Bulls are blocked")
+        elif result == logic.DRAW_NO_CAPTURE:
+            win_dialog.title.value = "DRAW"
+            win_dialog.content = ft.Text("30 moves by each side without capturing")
+        elif result == logic.DRAW_REPETITION:
+            win_dialog.title.value = "DRAW"
+            win_dialog.content = ft.Text("Position repeated three times")
+        page.show_dialog(win_dialog)
+
     # ---------- ОТРИСОВКА ДОСКИ ----------
     def draw_board():
         shapes = []
@@ -137,19 +153,7 @@ def main(page: ft.Page):
 
             winner = game.check_winner()
             if winner:
-                if winner == "BULLS":
-                    win_dialog.title.value = "BULLS WON"
-                    win_dialog.content = ft.Text("Not enough boys left")
-                elif winner == "BOYS":
-                    win_dialog.title.value = "BOYS WON"
-                    win_dialog.content = ft.Text("Bulls are blocked")
-                elif winner == "DRAW 30 MOVES":
-                    win_dialog.title.value = "DRAW"
-                    win_dialog.content = ft.Text("30 moves without capturing")
-                else:
-                    win_dialog.title.value = "DRAW"
-                    win_dialog.content = ft.Text("Position was repeated three times in a row")
-                page.show_dialog(win_dialog)
+                show_game_over(winner)
 
             update_ui_text()
             board_gest_detector.content = draw_board()
@@ -168,20 +172,7 @@ def main(page: ft.Page):
 
         winner = game.check_winner()
         if winner:
-            if winner == "BULLS":
-                win_dialog.title.value = "BULLS WON"
-                win_dialog.content = ft.Text("Not enough boys left")
-            elif winner == "BOYS":
-                win_dialog.title.value = "BOYS WON"
-                win_dialog.content = ft.Text("Bulls are blocked")
-            elif winner == "DRAW 30 MOVES":
-                win_dialog.title.value = "DRAW"
-                win_dialog.content = ft.Text("30 moves without capturing")
-            else:
-                win_dialog.title.value = "DRAW"
-                win_dialog.content = ft.Text("Position was repeated three times in a row")
-            page.show_dialog(win_dialog)
-            return
+            show_game_over(winner)
 
         if is_bot_turn or (bot and game.current_turn == bot_side):
             return
@@ -240,19 +231,7 @@ def main(page: ft.Page):
 
         winner = game.check_winner()
         if winner:
-            if winner == "BULLS":
-                win_dialog.title.value = "BULLS WON"
-                win_dialog.content = ft.Text("Not enough boys left")
-            elif winner == "BOYS":
-                win_dialog.title.value = "BOYS WON"
-                win_dialog.content = ft.Text("Bulls are blocked")
-            elif winner == "DRAW 30 MOVES":
-                win_dialog.title.value = "DRAW"
-                win_dialog.content = ft.Text("30 moves without capturing")
-            else:
-                win_dialog.title.value = "DRAW"
-                win_dialog.content = ft.Text("Position was repeated three times in a row")
-            page.show_dialog(win_dialog)
+            show_game_over(winner)
 
         update_ui_text()
         board_gest_detector.content = draw_board()
