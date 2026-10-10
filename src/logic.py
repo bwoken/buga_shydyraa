@@ -135,6 +135,16 @@ EMPTY = 0
 BULL = 1
 BOY = -1
 
+# logic.py
+BULLS_WIN = "BULLS_WIN"
+BOYS_WIN = "BOYS_WIN"
+DRAW_NO_CAPTURE = "DRAW_NO_CAPTURE"
+DRAW_REPETITION = "DRAW_REPETITION"
+
+BOYS_TO_WIN_AS_BULLS = 9      # быки побеждают, если мальчиков < 9
+MOVES_WITHOUT_CAPTURE_LIMIT = 60
+REPETITIONS_FOR_DRAW = 3
+
 class BugaGame:
     def __init__(self):
         # Состояние игры теперь хранится внутри объекта
@@ -258,19 +268,19 @@ class BugaGame:
         total_boys = on_board_boys + self.unused_boys
 
         # Условие победы БЫКОВ
-        if total_boys < 9:
-            return "BULLS"
+        if total_boys < BOYS_TO_WIN_AS_BULLS:
+            return BULLS_WIN
         # Условие победы МАЛЬЧИКОВ (быки заблокированы)
         if not self.can_bull_move():
-            return "BOYS"
+            return BOYS_WIN
 
-        if self.moves_without_capture >= 30: #ничья по 30 ходам без съедений
-            return "DRAW 30 MOVES"
+        if self.moves_without_capture >= MOVES_WITHOUT_CAPTURE_LIMIT: #ничья по числу ходов без съедений
+            return DRAW_NO_CAPTURE
 
         if self.position_history:
-            current_position = self.position_history[-1] #ничья по повторении позиции 3 раз
-            if self.position_history.count(current_position) >= 3:
-                return "DRAW REPETITION"
+            current_position = self.position_history[-1] #ничья по повторении позиции определенное количество раз
+            if self.position_history.count(current_position) >= REPETITIONS_FOR_DRAW:
+                return DRAW_REPETITION
 
         return None
 
