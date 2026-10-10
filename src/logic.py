@@ -265,12 +265,12 @@ class BugaGame:
             return "BOYS"
 
         if self.moves_without_capture >= 30: #ничья по 30 ходам без съедений
-            return "DRAW"
+            return "DRAW 30 MOVES"
 
         if self.position_history:
             current_position = self.position_history[-1] #ничья по повторении позиции 3 раз
             if self.position_history.count(current_position) >= 3:
-                return "DRAW"
+                return "DRAW REPETITION"
 
         return None
 

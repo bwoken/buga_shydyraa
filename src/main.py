@@ -137,10 +137,18 @@ def main(page: ft.Page):
 
             winner = game.check_winner()
             if winner:
-                if winner == "DRAW":
+                if winner == "BULLS":
+                    win_dialog.title.value = "BULLS WON"
+                    win_dialog.content = ft.Text("Not enough boys left")
+                elif winner == "BOYS":
+                    win_dialog.title.value = "BOYS WON"
+                    win_dialog.content = ft.Text("Bulls are blocked")
+                elif winner == "DRAW 30 MOVES":
                     win_dialog.title.value = "DRAW"
+                    win_dialog.content = ft.Text("30 moves without capturing")
                 else:
-                    win_dialog.title.value = f"{winner} WON!"
+                    win_dialog.title.value = "DRAW"
+                    win_dialog.content = ft.Text("Position was repeated three times in a row")
                 page.show_dialog(win_dialog)
 
             update_ui_text()
@@ -160,10 +168,18 @@ def main(page: ft.Page):
 
         winner = game.check_winner()
         if winner:
-            if winner == "DRAW":
+            if winner == "BULLS":
+                win_dialog.title.value = "BULLS WON"
+                win_dialog.content = ft.Text("Not enough boys left")
+            elif winner == "BOYS":
+                win_dialog.title.value = "BOYS WON"
+                win_dialog.content = ft.Text("Bulls are blocked")
+            elif winner == "DRAW 30 MOVES":
                 win_dialog.title.value = "DRAW"
+                win_dialog.content = ft.Text("30 moves without capturing")
             else:
-                win_dialog.title.value = f"{winner} WON!"
+                win_dialog.title.value = "DRAW"
+                win_dialog.content = ft.Text("Position was repeated three times in a row")
             page.show_dialog(win_dialog)
             return
 
@@ -224,7 +240,18 @@ def main(page: ft.Page):
 
         winner = game.check_winner()
         if winner:
-            win_dialog.title.value = f"{winner} WON!"
+            if winner == "BULLS":
+                win_dialog.title.value = "BULLS WON"
+                win_dialog.content = ft.Text("Not enough boys left")
+            elif winner == "BOYS":
+                win_dialog.title.value = "BOYS WON"
+                win_dialog.content = ft.Text("Bulls are blocked")
+            elif winner == "DRAW 30 MOVES":
+                win_dialog.title.value = "DRAW"
+                win_dialog.content = ft.Text("30 moves without capturing")
+            else:
+                win_dialog.title.value = "DRAW"
+                win_dialog.content = ft.Text("Position was repeated three times in a row")
             page.show_dialog(win_dialog)
 
         update_ui_text()
