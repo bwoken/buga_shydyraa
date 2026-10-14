@@ -153,12 +153,57 @@ class BugaGame:
         self.board = self.initialize_board()
         self.moves_without_capture = 0
         self.position_history = []
+        self.history = []
         self._record_position()
 
     def _record_position(self):
         board_tuple = tuple(sorted(self.board.items()))
         position_key = (board_tuple,self.current_turn,self.unused_boys)
         self.position_history.append(position_key)
+
+    def _snapshot(self):
+        """Снимок состояния для undo."""
+        return (
+            self.board.copy(),
+            self.current_turn,
+            self.unused_boys,
+            self.moves_without_capture,
+            len(self.position_history),
+        )
+
+    def _restore_snapshot(self, snap):
+        board, turn, unused, mwc, hist_len = snap
+        self.board = dict(board)
+        self.current_turn = turn
+        self.unused_boys = unused
+        self.moves_without_capture = mwc
+        del self.position_history[hist_len:]
+
+    def _save_before_move(self):
+        """Сохранить состояние перед ходом. Кто ходит — в момент вызова."""
+        self.history.append((self.current_turn, self._snapshot()))
+
+    def undo_player_move(self, player_side):
+        """
+        Откатывает ходы, пока не удалит последний ход игрока.
+        Возвращает True, если что-то откатили.
+        """
+        if not any(mover == player_side for mover, _ in self.history):
+            return False
+        while self.history:
+            mover, snap = self.history.pop()
+            self._restore_snapshot(snap)
+            if mover == player_side:
+                return True
+        return False
+
+    def undo_last(self):
+        """Откат одного хода (для локального режима)."""
+        if not self.history:
+            return False
+        _, snap = self.history.pop()
+        self._restore_snapshot(snap)
+        return True
 
     def initialize_board(self):
         """Создает доску и расставляет начальные фигуры."""
@@ -204,10 +249,13 @@ class BugaGame:
 
         return False
 
-    def make_move(self, start, end):
+    def make_move(self, start, end,save_undo=True):
         """Выполняет ход и обрабатывает съедание."""
         if not self.is_valid_move(start, end):
             return False
+
+        if save_undo:
+            self._save_before_move()  # ← НОВОЕ
 
         piece = self.board[start]
 
@@ -230,10 +278,12 @@ class BugaGame:
         self._record_position()
         return True
 
-    def place_boy(self, node_id):
+    def place_boy(self, node_id,save_undo = True):
         """Выставляет мальчика из 'кармана' на пустую клетку."""
         if self.current_turn == BOY and self.unused_boys > 0:
             if self.board.get(node_id) == EMPTY:
+                if save_undo:
+                    self._save_before_move()  # ← НОВОЕ
                 self.board[node_id] = BOY
                 self.unused_boys -= 1
                 self.current_turn = BULL

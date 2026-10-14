@@ -254,9 +254,9 @@ class SmartBot:
     def _apply(self, move):
         kind, start, end = move
         if kind == "MOVE":
-            self.game.make_move(start, end)
+            self.game.make_move(start, end, save_undo=False)
         else:
-            self.game.place_boy(end)
+            self.game.place_boy(end, save_undo=False)
 
     def _snapshot(self):
         """Сохраняем всё изменяемое состояние игры."""

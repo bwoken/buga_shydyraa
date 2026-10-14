@@ -25,10 +25,11 @@ def main(page: ft.Page):
     boys_text = ft.Text(value=f"BOYS TO PLACE: {game.unused_boys}", size=24,
                         color=ft.Colors.RED_400, weight=ft.FontWeight.BOLD)
     reset_button = ft.Button("RESET",on_click=lambda e: restart_game())
+    undo_button = ft.Button("UNDO",on_click=lambda e: undo_move(e))
 
     game_info_row = ft.Row(
-        [turn_text, boys_text,reset_button],
-        alignment=ft.MainAxisAlignment.SPACE_AROUND
+        [turn_text, boys_text, undo_button,reset_button],
+        alignment=ft.MainAxisAlignment.CENTER,spacing=10,wrap=True
     )
 
     win_dialog = ft.AlertDialog(
@@ -256,6 +257,33 @@ def main(page: ft.Page):
 
         choose_mode_dialog.open = True
         page.show_dialog(choose_mode_dialog)
+        page.update()
+
+    def undo_move(e):
+        """Откатывает последний ход игрока (+ ответы бота в режиме vs bot)."""
+        nonlocal selected_node, legal_moves_for_selected, is_bot_turn
+
+        # если бот думает — не трогаем
+        if is_bot_turn:
+            return
+
+        # в локальном режиме откатываем один ход
+        if bot is None:
+            if not game.undo_last():
+                return
+        else:
+            # в vs bot откатываем до последнего хода игрока
+            player_side = logic.BOY if bot_side == logic.BULL else logic.BULL
+            if not game.undo_player_move(player_side):
+                return
+
+        # сброс визуального состояния и диалогов
+        selected_node = None
+        legal_moves_for_selected = []
+        win_dialog.open = False
+
+        update_ui_text()
+        board_gest_detector.content = draw_board()
         page.update()
 
     # ---------- СТАРТ ИГРЫ (выбор режима) ----------
