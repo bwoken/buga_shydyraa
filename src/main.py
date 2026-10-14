@@ -173,6 +173,7 @@ def main(page: ft.Page):
         winner = game.check_winner()
         if winner:
             show_game_over(winner)
+            return
 
         if is_bot_turn or (bot and game.current_turn == bot_side):
             return
