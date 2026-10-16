@@ -49,6 +49,12 @@ def main(page: ft.Page):
         else:
             boys_text.color = ft.Colors.RED_400
 
+    def refresh_board():
+        """Обновляет текст, доску и UI."""
+        update_ui_text()
+        board_gest_detector.content = draw_board(game, selected_node, legal_moves_for_selected)
+        page.update()
+
     def show_game_over(result: str):
         """Показывает диалог окончания игры."""
         if result == logic.BULLS_WIN:
@@ -86,9 +92,7 @@ def main(page: ft.Page):
             if winner:
                 show_game_over(winner)
 
-            update_ui_text()
-            board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
-            page.update()
+            refresh_board()
 
             if game.current_turn == bot_side and not winner:
                 page.run_task(make_bot_move)
@@ -165,9 +169,7 @@ def main(page: ft.Page):
         if winner:
             show_game_over(winner)
 
-        update_ui_text()
-        board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
-        page.update()
+        refresh_board()
 
         if bot and game.current_turn == bot_side and not winner:
             page.run_task(make_bot_move)
@@ -212,9 +214,7 @@ def main(page: ft.Page):
         legal_moves_for_selected = []
         win_dialog.open = False
 
-        update_ui_text()
-        board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
-        page.update()
+        refresh_board()
 
     # ---------- СТАРТ ИГРЫ (выбор режима) ----------
     def start_game(mode: str):
@@ -243,9 +243,7 @@ def main(page: ft.Page):
             bot = SmartBot(game, bot_side)
 
         choose_mode_dialog.open = False
-        update_ui_text()
-        board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
-        page.update()
+        refresh_board()
 
         if bot and game.current_turn == bot_side:
             page.run_task(make_bot_move)
