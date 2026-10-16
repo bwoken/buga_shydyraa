@@ -3,6 +3,7 @@ import flet.canvas as cv
 import math
 import asyncio
 import logic
+from board import draw_board
 from bot import EasyBot,SmartBot
 
 def main(page: ft.Page):
@@ -65,77 +66,6 @@ def main(page: ft.Page):
         page.show_dialog(win_dialog)
 
     # ---------- ОТРИСОВКА ДОСКИ ----------
-    def draw_board():
-        shapes = []
-        drawn_connections = set()
-
-        # линии
-        for start_node, neighbors in logic.board_nodes.items():
-            for end_node in neighbors:
-                connection = tuple(sorted((start_node, end_node)))
-                if connection not in drawn_connections:
-                    x1, y1 = logic.NODE_COORDS[start_node]
-                    x2, y2 = logic.NODE_COORDS[end_node]
-                    shapes.append(
-                        cv.Line(x1, y1, x2, y2,
-                                ft.Paint(stroke_width=2, color=ft.Colors.BLACK))
-                    )
-                    drawn_connections.add(connection)
-
-        # подсветка возможных ходов
-        for node_id in legal_moves_for_selected:
-            x, y = logic.NODE_COORDS[node_id]
-            shapes.append(cv.Circle(
-                x, y, 20,
-                ft.Paint(color=ft.Colors.GREEN,
-                         style=ft.PaintingStyle.STROKE, stroke_width=3)
-            ))
-            shapes.append(cv.Circle(
-                x, y, 15,
-                ft.Paint(color=ft.Colors.with_opacity(0.3, ft.Colors.GREEN),
-                         style=ft.PaintingStyle.FILL)
-            ))
-
-        # фигуры
-        for node_id, coords in logic.NODE_COORDS.items():
-            x, y = coords
-            piece = game.board.get(node_id)
-
-            if selected_node == node_id:
-                shapes.append(cv.Circle(
-                    x, y, 25,
-                    ft.Paint(color=ft.Colors.YELLOW, style=ft.PaintingStyle.FILL)
-                ))
-
-            if piece == logic.BULL:
-                shapes.append(cv.Circle(
-                    x, y, 20,
-                    ft.Paint(color=ft.Colors.GREY_300, style=ft.PaintingStyle.FILL)
-                ))
-            elif piece == logic.BOY:
-                shapes.append(cv.Circle(
-                    x, y, 15,
-                    ft.Paint(color=ft.Colors.BLUE, style=ft.PaintingStyle.FILL)
-                ))
-            else:
-                shapes.append(cv.Circle(
-                    x, y, 5,
-                    ft.Paint(color=ft.Colors.BLACK, style=ft.PaintingStyle.FILL)
-                ))
-
-        # номера узлов (дебаг)
-        for node_id, coords in logic.NODE_COORDS.items():
-            x, y = coords
-            shapes.append(cv.Text(
-                x, y,
-                spans=[ft.TextSpan(
-                    text=str(node_id),
-                    style=ft.TextStyle(color=ft.Colors.AMBER,
-                                       weight=ft.FontWeight.BOLD)
-                )]
-            ))
-
-        return cv.Canvas(shapes=shapes, expand=True)
 
     # ---------- ХОД БОТА ----------
     async def make_bot_move():
@@ -157,7 +87,7 @@ def main(page: ft.Page):
                 show_game_over(winner)
 
             update_ui_text()
-            board_gest_detector.content = draw_board()
+            board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
             page.update()
 
             if game.current_turn == bot_side and not winner:
@@ -236,7 +166,7 @@ def main(page: ft.Page):
             show_game_over(winner)
 
         update_ui_text()
-        board_gest_detector.content = draw_board()
+        board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
         page.update()
 
         if bot and game.current_turn == bot_side and not winner:
@@ -283,7 +213,7 @@ def main(page: ft.Page):
         win_dialog.open = False
 
         update_ui_text()
-        board_gest_detector.content = draw_board()
+        board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
         page.update()
 
     # ---------- СТАРТ ИГРЫ (выбор режима) ----------
@@ -314,7 +244,7 @@ def main(page: ft.Page):
 
         choose_mode_dialog.open = False
         update_ui_text()
-        board_gest_detector.content = draw_board()
+        board_gest_detector.content = draw_board(game,selected_node,legal_moves_for_selected)
         page.update()
 
         if bot and game.current_turn == bot_side:
@@ -368,7 +298,7 @@ def main(page: ft.Page):
     # ---------- СБОРКА UI ----------
     board_gest_detector = ft.GestureDetector(
         on_tap_down=on_board_click,
-        content=draw_board(),
+        content=draw_board(game,selected_node,legal_moves_for_selected),
     )
 
     board_container = ft.Container(
