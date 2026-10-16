@@ -25,11 +25,14 @@ def main(page: ft.Page):
                         color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD)
     boys_text = ft.Text(value=f"BOYS TO PLACE: {game.unused_boys}", size=24,
                         color=ft.Colors.RED_400, weight=ft.FontWeight.BOLD)
+    draw_text = ft.Text(value=f"DRAW IN {logic.MOVES_WITHOUT_CAPTURE_LIMIT} MOVES",size=24,
+                        color=ft.Colors.BLUE, weight=ft.FontWeight.BOLD)
+
     reset_button = ft.Button("RESET",on_click=lambda e: restart_game())
     undo_button = ft.Button("UNDO",on_click=lambda e: undo_move(e))
 
     game_info_row = ft.Row(
-        [turn_text, boys_text, undo_button,reset_button],
+        [turn_text, boys_text, draw_text,undo_button,reset_button],
         alignment=ft.MainAxisAlignment.CENTER,spacing=10,wrap=True
     )
 
@@ -43,6 +46,8 @@ def main(page: ft.Page):
         turn_text.value = "TURN: BULLS" if game.current_turn == logic.BULL else "TURN: BOYS"
         turn_text.color = ft.Colors.WHITE if game.current_turn == logic.BULL else ft.Colors.BLUE
         boys_text.value = f"BOYS TO PLACE: {game.unused_boys}"
+        moves_left = logic.MOVES_WITHOUT_CAPTURE_LIMIT - game.moves_without_capture
+        draw_text.value = f"DRAW IN: {moves_left // 2} MOVES"
         if game.unused_boys == 0:
             boys_text.color = ft.Colors.GREEN
             boys_text.value = "ALL BOYS PLACED"
