@@ -65,7 +65,8 @@ def main(page: ft.Page):
             win_dialog.content = ft.Text("Bulls are blocked")
         elif result == logic.DRAW_NO_CAPTURE:
             win_dialog.title.value = "DRAW"
-            win_dialog.content = ft.Text("30 moves by each side without capturing")
+            moves_per_side = logic.MOVES_WITHOUT_CAPTURE_LIMIT // 2
+            win_dialog.content = ft.Text(f"{moves_per_side} moves by each side without capturing")
         elif result == logic.DRAW_REPETITION:
             win_dialog.title.value = "DRAW"
             win_dialog.content = ft.Text("Position repeated three times")
