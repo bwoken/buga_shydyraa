@@ -1,397 +1,191 @@
-# nodes and their connections to other nodes
-board_nodes = {1: [2, 3, 4],
-               2: [1, 3, 7],
-               3: [1, 2, 4, 7],
-               4: [1, 3, 7],
-               5: [6, 11, 10],
-               6: [5, 11, 7],
-               7: [2, 3, 4, 6, 11, 12, 13, 8],
-               8: [7, 13, 9],
-               9: [8, 13, 14],
-               10: [5, 11, 15],
-               11: [5, 6, 7, 10, 12, 15, 16, 17],
-               12: [11, 7, 13, 17],
-               13: [7, 8, 9, 12, 14, 17, 18, 19],
-               14: [9, 13, 19],
-               15: [10, 11, 16, 21, 20],
-               16: [15, 11, 17, 21],
-               17: [11, 12, 13, 16, 18, 21, 22, 23],
-               18: [17, 13, 19, 23],
-               19: [13, 14, 18, 23, 24],
-               20: [15, 21, 25],
-               21: [15, 16, 17, 20, 22, 25, 26, 27],
-               22: [17, 21, 23, 27],
-               23: [17, 18, 19, 22, 24, 27, 28, 29],
-               24: [19, 23, 29],
-               25: [20, 21, 26],
-               26: [21, 25, 27],
-               27: [21, 22, 23, 26, 28, 30, 31, 32],
-               28: [23, 27, 29],
-               29: [23, 24, 28],
-               30: [27, 31, 33],
-               31: [27, 30, 32, 34],
-               32: [27, 31, 35],
-               33: [30, 34],
-               34: [31, 33, 35],
-               35: [32, 34]}
-# key - starting node, first in the tuple - middle point (where boy should be), second in the tuple - endpoint
-possible_moves = {1: [(3, 7)],
-                  2: [(7, 13), (3, 4)],
-                  3: [(7, 12)],
-                  4: [(3, 2), (7, 11)],
-                  5: [(6, 7), (11, 17), (10, 15)],
-                  6: [(7, 8), (11, 16)],
-                  7: [(3, 1), (6, 5), (8, 9), (11, 15), (12, 17), (13, 19)],
-                  8: [(7, 6), (13, 18)],
-                  9: [(8, 7), (13, 17), (14, 19)],
-                  10: [(11, 12), (15, 20)],
-                  11: [(12, 13), (17, 23), (16, 21), (7, 4)],
-                  12: [(7, 3), (11, 10), (13, 14), (17, 22)],
-                  13: [(7, 2), (12, 11), (17, 21), (18, 23)],
-                  14: [(13, 12), (19, 24)],
-                  15: [(10, 5), (11, 7), (16, 17), (21, 27), (20, 25)],
-                  16: [(11, 6), (17, 18), (21, 26)],
-                  17: [(11, 5), (12, 7), (13, 9), (18, 19), (23, 29), (22, 27), (21, 25), (16, 15)],
-                  18: [(13, 8), (17, 16), (23, 28)],
-                  19: [(13, 7), (14, 9), (18, 17), (23, 27), (24, 29)],
-                  20: [(15, 10), (21, 22)],
-                  21: [(16, 11), (17, 13), (22, 23), (27, 32)],
-                  22: [(17, 12), (23, 24), (27, 31), (21, 20)],
-                  23: [(17, 11), (18, 13), (22, 21), (27, 30)],
-                  24: [(19, 14), (23, 22)],
-                  25: [(20, 15), (21, 17), (26, 27)],
-                  26: [(21, 16), (27, 28)],
-                  27: [(21, 15), (22, 17), (23, 19), (26,25), (28, 29), (32, 35), (31, 34), (30, 33)],
-                  28: [(23, 18), (27, 26)],
-                  29: [(23, 17), (24, 19), (28, 27)],
-                  30: [(27, 23), (31, 32)],
-                  31: [(27, 22)],
-                  32: [(27, 21), (31, 30)],
-                  33: [(30, 27), (34, 35)],
-                  34: [(31, 27)],
-                  35: [(32, 27), (34, 33)]}
+"""Pure game rules, independent of UI and networking.
 
-# coordinates for board canvas
-UNIT = 70.0 # minimal distance between nodes
-OFFSET_X = 40.0   # Маленький отступ слева/справа
-OFFSET_Y = 165.0  # Большой отступ сверху, чтобы влезла "голова"
+Draw limits and the bull victory threshold belong to this app's rule variant.
+"""
 
-NODE_COORDS = {
-    # --- Голова и Шея ---
-    # Y отсчитывается от OFFSET_Y (250) минус 3 юнита (210) = 40. Все координаты положительные!
-    1: (OFFSET_X + 2 * UNIT, OFFSET_Y - 2 * UNIT),
-    2: (OFFSET_X + 1 * UNIT, OFFSET_Y - 1 * UNIT),
-    3: (OFFSET_X + 2 * UNIT, OFFSET_Y - 1 * UNIT),
-    4: (OFFSET_X + 3 * UNIT, OFFSET_Y - 1 * UNIT),
+from copy import deepcopy
+from typing import Literal, NamedTuple
 
-    # --- Плечи ---
-    5: (OFFSET_X, OFFSET_Y),
-    6: (OFFSET_X + 1 * UNIT, OFFSET_Y),
-    7: (OFFSET_X + 2 * UNIT, OFFSET_Y),
-    8: (OFFSET_X + 3 * UNIT, OFFSET_Y),
-    9: (OFFSET_X + 4 * UNIT, OFFSET_Y),
+from topology import NODE_COORDS, BOARD_NEIGHBORS, CAPTURE_PATHS
 
-    # --- Сетка 5x5 ---
-    # Row 1
-    10: (OFFSET_X, OFFSET_Y + 1 * UNIT),
-    11: (OFFSET_X + 1 * UNIT, OFFSET_Y + 1 * UNIT),
-    12: (OFFSET_X + 2 * UNIT, OFFSET_Y + 1 * UNIT),
-    13: (OFFSET_X + 3 * UNIT, OFFSET_Y + 1 * UNIT),
-    14: (OFFSET_X + 4 * UNIT, OFFSET_Y + 1 * UNIT),
-
-    # Row 2
-    15: (OFFSET_X, OFFSET_Y + 2 * UNIT),
-    16: (OFFSET_X + 1 * UNIT, OFFSET_Y + 2 * UNIT),
-    17: (OFFSET_X + 2 * UNIT, OFFSET_Y + 2 * UNIT),
-    18: (OFFSET_X + 3 * UNIT, OFFSET_Y + 2 * UNIT),
-    19: (OFFSET_X + 4 * UNIT, OFFSET_Y + 2 * UNIT),
-
-    # Row 3
-    20: (OFFSET_X, OFFSET_Y + 3 * UNIT),
-    21: (OFFSET_X + 1 * UNIT, OFFSET_Y + 3 * UNIT),
-    22: (OFFSET_X + 2 * UNIT, OFFSET_Y + 3 * UNIT),
-    23: (OFFSET_X + 3 * UNIT, OFFSET_Y + 3 * UNIT),
-    24: (OFFSET_X + 4 * UNIT, OFFSET_Y + 3 * UNIT),
-
-    # Row 4 (Основание квадрата)
-    25: (OFFSET_X, OFFSET_Y + 4 * UNIT),
-    26: (OFFSET_X + 1 * UNIT, OFFSET_Y + 4 * UNIT),
-    27: (OFFSET_X + 2 * UNIT, OFFSET_Y + 4 * UNIT),
-    28: (OFFSET_X + 3 * UNIT, OFFSET_Y + 4 * UNIT),
-    29: (OFFSET_X + 4 * UNIT, OFFSET_Y + 4 * UNIT),
-
-    # --- Ноги ---
-    30: (OFFSET_X + 1 * UNIT, OFFSET_Y + 5 * UNIT),
-    31: (OFFSET_X + 2 * UNIT, OFFSET_Y + 5 * UNIT),
-    32: (OFFSET_X + 3 * UNIT, OFFSET_Y + 5 * UNIT),
-
-    33: (OFFSET_X, OFFSET_Y + 6 * UNIT),
-    34: (OFFSET_X + 2 * UNIT, OFFSET_Y + 6 * UNIT),
-    35: (OFFSET_X + 4 * UNIT, OFFSET_Y + 6 * UNIT),
-}
-
-# --- КОНСТАНТЫ ---
-EMPTY = 0
-BULL = 1
-BOY = -1
-
-# logic.py
-BULLS_WIN = "BULLS_WIN"
-BOYS_WIN = "BOYS_WIN"
-DRAW_NO_CAPTURE = "DRAW_NO_CAPTURE"
-DRAW_REPETITION = "DRAW_REPETITION"
-
-BOYS_TO_WIN_AS_BULLS = 9      # быки побеждают, если мальчиков < 9
-MOVES_WITHOUT_CAPTURE_LIMIT = 60
+EMPTY, BULL, BOY = 0, 1, -1
+BULLS_WIN, BOYS_WIN = "BULLS_WIN", "BOYS_WIN"
+DRAW_NO_CAPTURE, DRAW_REPETITION = "DRAW_NO_CAPTURE", "DRAW_REPETITION"
+BOYS_TO_WIN_AS_BULLS = 9
+MOVES_WITHOUT_CAPTURE_LIMIT = 60  # plies, including placements
 REPETITIONS_FOR_DRAW = 3
+INITIAL_BOYS = 24
+
+
+class Move(NamedTuple):
+    kind: Literal["MOVE", "PLACE"]
+    start: int | None
+    end: int
+
+
+def infer_move(before, after):
+    """Recover one move from consecutive board positions."""
+    if not before:
+        return None
+    removed = [n for n in before if before[n] != EMPTY and after[n] == EMPTY]
+    added = [n for n in after if after[n] != EMPTY and before[n] == EMPTY]
+    changed = {n for n in before if before[n] != after[n]}
+    if len(added) != 1:
+        return None
+    end = added[0]
+    if not removed and after[end] == BOY and changed == {end}:
+        return Move("PLACE", None, end)
+    starts = [n for n in removed if before[n] == after[end]]
+    if len(starts) != 1 or len(removed) > 2 or changed != {end, *removed}:
+        return None
+    return Move("MOVE", starts[0], end)
+
 
 class BugaGame:
     def __init__(self):
-        # Состояние игры теперь хранится внутри объекта
-        self.unused_boys = 16
-        self.current_turn = BULL
         self.board = self.initialize_board()
+        self.current_turn = BULL
+        self.unused_boys = 16
         self.moves_without_capture = 0
-        self.position_history = []
+        self.position_history = [self.position_key()]
         self.history = []
-        self._record_position()
 
-    def _record_position(self):
-        board_tuple = tuple(sorted(self.board.items()))
-        position_key = (board_tuple,self.current_turn,self.unused_boys)
-        self.position_history.append(position_key)
+    @staticmethod
+    def initialize_board():
+        board = dict.fromkeys(range(1, 36), EMPTY)
+        for node in (7, 27):
+            board[node] = BULL
+        for node in (11, 12, 13, 16, 18, 21, 22, 23):
+            board[node] = BOY
+        return board
+
+    def position_key(self):
+        return tuple(self.board.values()), self.current_turn, self.unused_boys
+
+    def clone(self):
+        """A worker or client snapshot must never mutate the live game."""
+        return deepcopy(self)
+
+    def last_move(self):
+        """Return the latest recorded move, including a placement."""
+        if not self.history:
+            return None
+        _, snapshot = self.history[-1]
+        return infer_move(snapshot[0], self.board)
 
     def _snapshot(self):
-        """Снимок состояния для undo."""
-        return (
-            self.board.copy(),
-            self.current_turn,
-            self.unused_boys,
-            self.moves_without_capture,
-            len(self.position_history),
-        )
+        return (self.board.copy(), self.current_turn, self.unused_boys,
+                self.moves_without_capture, len(self.position_history))
 
-    def _restore_snapshot(self, snap):
-        board, turn, unused, mwc, hist_len = snap
-        self.board = dict(board)
+    def _restore_snapshot(self, snapshot):
+        board, turn, reserve, quiet_plies, history_length = snapshot
+        self.board = board.copy()
         self.current_turn = turn
-        self.unused_boys = unused
-        self.moves_without_capture = mwc
-        del self.position_history[hist_len:]
-
-    def _save_before_move(self):
-        """Сохранить состояние перед ходом. Кто ходит — в момент вызова."""
-        self.history.append((self.current_turn, self._snapshot()))
-
-    def undo_player_move(self, player_side):
-        """
-        Откатывает ходы, пока не удалит последний ход игрока.
-        Возвращает True, если что-то откатили.
-        """
-        if not any(mover == player_side for mover, _ in self.history):
-            return False
-        while self.history:
-            mover, snap = self.history.pop()
-            self._restore_snapshot(snap)
-            if mover == player_side:
-                return True
-        return False
+        self.unused_boys = reserve
+        self.moves_without_capture = quiet_plies
+        del self.position_history[history_length:]
 
     def undo_last(self):
-        """Откат одного хода (для локального режима)."""
         if not self.history:
             return False
-        _, snap = self.history.pop()
-        self._restore_snapshot(snap)
+        _, snapshot = self.history.pop()
+        self._restore_snapshot(snapshot)
         return True
 
-    def initialize_board(self):
-        """Создает доску и расставляет начальные фигуры."""
-        # Создаем пустую доску
-        state = {i: EMPTY for i in range(1, 36)}
+    def undo_player_move(self, player_side):
+        if not any(side == player_side for side, _ in self.history):
+            return False
+        while self.history:
+            side, _ = self.history[-1]
+            self.undo_last()
+            if side == player_side:
+                return True
+        return False
 
-        # Расстановка быков
-        state[7] = BULL
-        state[27] = BULL
+    def destinations(self, node):
+        """Geometric moves for either side, independent of whose turn it is."""
+        piece = self.board.get(node)
+        if piece not in (BULL, BOY) or (piece == BOY and self.unused_boys):
+            return []
+        targets = [end for end in BOARD_NEIGHBORS[node] if self.board[end] == EMPTY]
+        if piece == BULL:
+            targets.extend(end for middle, end in CAPTURE_PATHS[node]
+                           if self.board[middle] == BOY and self.board[end] == EMPTY)
+        return targets
 
-        # Расстановка 8 начальных мальчиков
-        for i in [11, 12, 13, 16, 18, 21, 22, 23]:
-            state[i] = BOY
-
-        return state
+    def get_legal_moves_for_node(self, node):
+        if self.board.get(node) != self.current_turn:
+            return []
+        return self.destinations(node)
 
     def is_valid_move(self, start, end):
-        """Проверяет, возможен ли ход по правилам."""
-        if self.board.get(end) != EMPTY:
-            return False
+        return end in self.get_legal_moves_for_node(start)
 
-        piece = self.board.get(start)
-
-        # ЛОГИКА МАЛЬЧИКА
-        if piece == BOY:
-            # Мальчики не могут ходить, пока карман не пуст!
-            if self.unused_boys > 0:
-                return False
-            # Если карман пуст, могут ходить на соседние узлы
-            if end in board_nodes.get(start, []):
-                return True
-
-        # ЛОГИКА БЫКА
-        elif piece == BULL:
-            # 1. Обычный шаг на соседний узел
-            if end in board_nodes.get(start, []):
-                return True
-            # 2. Прыжок (съедание) через мальчика
-            if start in possible_moves:
-                for mid_node, landing_node in possible_moves[start]:
-                    if landing_node == end and self.board.get(mid_node) == BOY:
-                        return True
-
-        return False
-
-    def make_move(self, start, end,save_undo=True):
-        """Выполняет ход и обрабатывает съедание."""
-        if not self.is_valid_move(start, end):
-            return False
-
-        if save_undo:
-            self._save_before_move()  # ← НОВОЕ
-
-        piece = self.board[start]
-
-        # Если ходит бык и это не обычный шаг (значит это прыжок)
-        if piece == BULL and end not in board_nodes.get(start, []):
-            if start in possible_moves:
-                for mid_node, landing_node in possible_moves[start]:
-                    if landing_node == end:
-                        # Удаляем съеденного мальчика навсегда
-                        self.board[mid_node] = EMPTY
-                        self.moves_without_capture = 0
-
-                        # Выполняем перемещение
-        self.board[end] = piece
-        self.board[start] = EMPTY
-        self.moves_without_capture += 1
-
-        # Передаем ход
-        self.current_turn = BOY if self.current_turn == BULL else BULL
-        self._record_position()
-        return True
-
-    def place_boy(self, node_id,save_undo = True):
-        """Выставляет мальчика из 'кармана' на пустую клетку."""
-        if self.current_turn == BOY and self.unused_boys > 0:
-            if self.board.get(node_id) == EMPTY:
-                if save_undo:
-                    self._save_before_move()  # ← НОВОЕ
-                self.board[node_id] = BOY
-                self.unused_boys -= 1
-                self.current_turn = BULL
-                self._record_position()
-                return True
-        return False
-
-    def can_bull_move(self):
-        """Проверяет, есть ли у любого из быков хоть один законный ход."""
-        # Ищем все позиции, где стоят быки
-        bull_positions = [node for node, piece in self.board.items() if piece == BULL]
-
-        for pos in bull_positions:
-            # 1. Проверяем обычные шаги (соседние пустые узлы)
-            neighbors = board_nodes.get(pos, [])
-            for neighbor in neighbors:
-                if self.board.get(neighbor) == EMPTY:
-                    return True  # Нашли хоть один ход — быки не заблокированы
-
-            # 2. Проверяем прыжки (бык может прыгнуть, если за мальчиком пусто)
-            jumps = possible_moves.get(pos, [])
-            for mid_node, landing_node in jumps:
-                if (self.board.get(landing_node) == EMPTY and
-                        self.board.get(mid_node) == BOY):
-                    return True  # Бык может съесть мальчика — он не заблокирован
-
-        return False  # Ни один бык не может ни шагнуть, ни прыгнуть
-
-    def check_winner(self):
-        """Проверка условий победы."""
-        on_board_boys = sum(1 for p in self.board.values() if p == BOY)
-        total_boys = on_board_boys + self.unused_boys
-
-        # Условие победы БЫКОВ
-        if total_boys < BOYS_TO_WIN_AS_BULLS:
-            return BULLS_WIN
-        # Условие победы МАЛЬЧИКОВ (быки заблокированы)
-        if not self.can_bull_move():
-            return BOYS_WIN
-
-        if self.moves_without_capture >= MOVES_WITHOUT_CAPTURE_LIMIT: #ничья по числу ходов без съедений
-            return DRAW_NO_CAPTURE
-
-        if self.position_history:
-            current_position = self.position_history[-1] #ничья по повторении позиции определенное количество раз
-            if self.position_history.count(current_position) >= REPETITIONS_FOR_DRAW:
-                return DRAW_REPETITION
-
-        return None
+    def capture_node(self, move):
+        kind, start, end = move
+        if kind != "MOVE" or self.board.get(start) != BULL:
+            return None
+        return next((mid for mid, target in CAPTURE_PATHS[start]
+                     if target == end and self.board[mid] == BOY
+                     and self.board[end] == EMPTY), None)
 
     def get_all_legal_moves(self):
-        moves = []
-        # Проходим по всем узлам доски
-        for start_node, piece in self.board.items():
-            # Бот должен ходить ТОЛЬКО своими фигурами
-            if piece == self.current_turn:
-                # Если это мальчик и в запасе еще есть кто-то — бот ДОЛЖЕН выставлять
-                if piece == BOY and self.unused_boys > 0:
-                    # В этом режиме он не двигает фигуры, а только ставит
-                    # (Логика: если есть запас, ход состоит только из выставления)
-                    continue
+        if self.current_turn == BOY and self.unused_boys:
+            return [Move("PLACE", None, node) for node, piece in self.board.items()
+                    if piece == EMPTY]
+        return [Move("MOVE", start, end) for start, piece in self.board.items()
+                if piece == self.current_turn for end in self.destinations(start)]
 
-                    # Проверяем все возможные точки назначения
-                for end_node in self.board.keys():
-                    if self.is_valid_move(start_node, end_node):
-                        moves.append(("MOVE", start_node, end_node))
+    def apply(self, move, save_undo=True):
+        if not isinstance(move, (tuple, list)) or len(move) != 3:
+            return False
+        kind, start, end = move
+        if kind == "PLACE" and start is None:
+            return self.place_boy(end, save_undo)
+        if kind == "MOVE":
+            return self.make_move(start, end, save_undo)
+        return False
 
-        # Если это ход мальчиков и есть запас, добавляем только ходы выставления
-        if self.current_turn == BOY and self.unused_boys > 0:
-            for node_id, piece in self.board.items():
-                if piece == EMPTY:
-                    moves.append(("PLACE", None, node_id))
+    def _finish_move(self, captured=False):
+        self.moves_without_capture = 0 if captured else self.moves_without_capture + 1
+        self.current_turn = -self.current_turn
+        self.position_history.append(self.position_key())
 
-        return moves
+    def make_move(self, start, end, save_undo=True):
+        if self.check_winner() or not self.is_valid_move(start, end):
+            return False
+        if save_undo:
+            self.history.append((self.current_turn, self._snapshot()))
+        captured = self.capture_node(Move("MOVE", start, end))
+        if captured is not None:
+            self.board[captured] = EMPTY
+        self.board[end], self.board[start] = self.board[start], EMPTY
+        self._finish_move(captured is not None)
+        return True
 
-    # ходы для отдельной фигуры
-    def get_legal_moves_for_node(self, node_id):
-        """Возвращает список возможных ходов для конкретной фигуры."""
-        moves = []
-        piece = self.board.get(node_id)
+    def place_boy(self, node, save_undo=True):
+        if (self.check_winner() or self.current_turn != BOY
+                or self.unused_boys <= 0 or self.board.get(node) != EMPTY):
+            return False
+        if save_undo:
+            self.history.append((self.current_turn, self._snapshot()))
+        self.board[node] = BOY
+        self.unused_boys -= 1
+        self._finish_move()
+        return True
 
-        if piece is None or piece == EMPTY:
-            return moves
+    def can_bull_move(self):
+        return any(self.destinations(node) for node, piece in self.board.items()
+                   if piece == BULL)
 
-        # Для мальчиков
-        if piece == BOY:
-            if self.unused_boys > 0:
-                # Если есть запас - можно только выставлять
-                # Но это обрабатывается отдельно в UI
-                return moves
-            else:
-                # Проверяем соседние узлы
-                for neighbor in board_nodes.get(node_id, []):
-                    if self.board.get(neighbor) == EMPTY:
-                        moves.append(neighbor)
-
-        # Для быков
-        elif piece == BULL:
-            # 1. Обычные шаги
-            for neighbor in board_nodes.get(node_id, []):
-                if self.board.get(neighbor) == EMPTY:
-                    moves.append(neighbor)
-
-            # 2. Прыжки (съедания)
-            if node_id in possible_moves:
-                for mid_node, landing_node in possible_moves[node_id]:
-                    if (self.board.get(landing_node) == EMPTY and
-                            self.board.get(mid_node) == BOY):
-                        moves.append(landing_node)
-
-        return moves
+    def check_winner(self):
+        remaining = sum(piece == BOY for piece in self.board.values()) + self.unused_boys
+        if remaining < BOYS_TO_WIN_AS_BULLS:
+            return BULLS_WIN
+        if not self.can_bull_move():
+            return BOYS_WIN
+        if self.moves_without_capture >= MOVES_WITHOUT_CAPTURE_LIMIT:
+            return DRAW_NO_CAPTURE
+        if self.position_history.count(self.position_key()) >= REPETITIONS_FOR_DRAW:
+            return DRAW_REPETITION
+        return None
